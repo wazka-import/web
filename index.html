@@ -141,7 +141,6 @@
         <a class="nav-link" data-page="catalogo" href="#/catalogo">Catálogo</a>
         <a class="nav-link" data-page="nosotros" href="#/nosotros">Nosotros</a>
         <a class="nav-link" data-page="faq" href="#/faq">FAQ</a>
-        <a class="nav-link" data-page="testimonios" href="#/testimonios">Reseñas</a>
         <a class="nav-link" href="https://wa.link/kchumv" target="_blank">Contacto</a>
       </nav>
 
@@ -328,33 +327,6 @@
       </div>
     </section>
 
-    <section class="page" id="page-testimonios" data-page="testimonios">
-      <div class="page-hero">
-        <p class="page-kicker">Clientes Wazka</p>
-        <h2 class="page-title">Lo que dice la comunidad</h2>
-        <p class="page-copy">Reseñas reales de pedidos ya entregados.</p>
-      </div>
-
-      <div class="section">
-        <div class="testimonials-grid">
-          <article class="testimonial-card">
-            <p class="testimonial-stars">★★★★★</p>
-            <p class="testimonial-quote">"Pedí el Khamrah Qahwa y llegó justo en la fecha que me dijeron. Súper atento por WhatsApp todo el proceso."</p>
-            <p class="testimonial-name">— Renzo, Los Olivos</p>
-          </article>
-          <article class="testimonial-card">
-            <p class="testimonial-stars">★★★★★</p>
-            <p class="testimonial-quote">"Ya es mi tercer pedido. La separación con 30% me hace más fácil planificar la compra."</p>
-            <p class="testimonial-name">— Camila, San Juan de Lurigancho</p>
-          </article>
-          <article class="testimonial-card">
-            <p class="testimonial-stars">★★★★★</p>
-            <p class="testimonial-quote">"Los packs de regalo llegaron en perfecto estado. Precio bastante mejor que en tienda."</p>
-            <p class="testimonial-name">— Diego, Surco</p>
-          </article>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="footer" id="contacto">
@@ -393,7 +365,7 @@
   </aside>
 
   <script type="module">
-    import products from "./db/products.js";
+    import { getProducts } from "./db/products.js";
 
     const slides = document.querySelectorAll('.hero-slide');
     const dots = document.querySelectorAll('.dot');
@@ -402,6 +374,8 @@
     const heroCopy = document.getElementById('heroCopy');
     let currentSlide = 0;
     let cart = [];
+    let products = [];
+    let productsLoaded = false;
 
     const heroMessages = [
       {
@@ -491,10 +465,32 @@
       `;
     }
 
+    async function loadProducts() {
+      const grid = document.getElementById('productsGrid');
+      const empty = document.getElementById('emptyState');
+      const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+      grid.innerHTML = '';
+      loadMoreBtn.classList.add('hidden');
+      empty.style.display = 'block';
+      empty.innerHTML = 'Cargando catálogo… esto puede tardar unos segundos, tenemos más de 3200 productos 🦙';
+
+      try {
+        products = await getProducts();
+        productsLoaded = true;
+        renderProducts();
+      } catch (error) {
+        empty.innerHTML = 'No pudimos cargar el catálogo. Revisa tu conexión e intenta de nuevo. <button class="order-btn" onclick="loadProducts()">Reintentar</button>';
+      }
+    }
+
     function renderProducts() {
       const grid = document.getElementById('productsGrid');
       const empty = document.getElementById('emptyState');
       const loadMoreBtn = document.getElementById('loadMoreBtn');
+
+      if (!productsLoaded) return;
+
       const searchValue = document.getElementById('searchInput').value.trim().toLowerCase();
 
       const filteredProducts = products.filter(product => {
@@ -657,13 +653,12 @@
       countdownTimer.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
     }
 
-    const pageIds = ['inicio', 'catalogo', 'nosotros', 'faq', 'testimonios'];
+    const pageIds = ['inicio', 'catalogo', 'nosotros', 'faq'];
     const pageTitles = {
       inicio: 'Wazka Import | Perfumería Urbana',
       catalogo: 'Catálogo | Wazka Import',
       nosotros: 'Nosotros | Wazka Import',
-      faq: 'Preguntas frecuentes | Wazka Import',
-      testimonios: 'Reseñas | Wazka Import'
+      faq: 'Preguntas frecuentes | Wazka Import'
     };
 
     function navigate() {
@@ -688,6 +683,7 @@
     // no expone sus funciones ahí por defecto: hay que asignarlas explícitamente a window.
     window.changeSlide = changeSlide;
     window.renderProducts = renderProducts;
+    window.loadProducts = loadProducts;
     window.loadMoreProducts = loadMoreProducts;
     window.addToCart = addToCart;
     window.updateQuantity = updateQuantity;
@@ -695,7 +691,7 @@
     window.toggleCart = toggleCart;
     window.checkoutOrder = checkoutOrder;
 
-    renderProducts();
+    loadProducts();
     renderCart();
     updateCountdown();
     setInterval(updateCountdown, 1000);
